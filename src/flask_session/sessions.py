@@ -536,6 +536,29 @@ class SqlAlchemySessionInterface(SessionInterface):
                 return self.session_class(sid=sid, permanent=self.permanent)
         return self.session_class(sid=sid, permanent=self.permanent)
 
+    def destroy(self, session):
+        store_id = self.key_prefix + session.sid
+        saved_session = self.sql_session_model.query.filter_by(
+                        session_id=store_id).first()
+        if saved_session:
+            # Delete from our session store
+            self.db.session.delete(saved_session)
+            self.db.session.commit()
+
+        #session.sid = None
+        session.modified = True
+
+    def regenerate(self, session):
+        store_id = self.key_prefix + session.sid
+        saved_session = self.sql_session_model.query.filter_by(
+            session_id=store_id).first()
+        if saved_session:
+            self.db.session.delete(saved_session)
+            self.db.session.commit()
+
+        session.sid = self._generate_sid()
+        session.modified = True
+
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
