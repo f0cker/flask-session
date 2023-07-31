@@ -522,12 +522,12 @@ class SqlAlchemySessionInterface(SessionInterface):
         store_id = self.key_prefix + sid
         saved_session = self.sql_session_model.query.filter_by(
             session_id=store_id).first()
-        if saved_session and saved_session.expiry <= datetime.utcnow():
-            # Delete expired session
-            self.db.session.delete(saved_session)
-            self.db.session.commit()
-            saved_session = None
         if saved_session:
+            if saved_session.expiry and saved_session.expiry <= datetime.utcnow():
+                # Delete expired session
+                self.db.session.delete(saved_session)
+                self.db.session.commit()
+                saved_session = None
             try:
                 val = saved_session.data
                 data = self.serializer.loads(want_bytes(val))
